@@ -123,3 +123,8 @@ self_promotion_as_predicted_by_BERT_model,bio_id,date,chamber,party,gender,age,f
 0,K000377,2020-12-03,senate,D,M,57,13.288,2
 1,K000377,2020-12-05,senate,D,M,57,13.288,2
 ```
+
+![Results of linear mixed-effects regression](./image/table_coef.jpg)
+
+![Gender difference over time](./image/fig_trend_gender_difference.jpg)
+
