@@ -1,0 +1,10 @@
+
+== for these 3 files, check Makefile ==
+	historical-users-filtered.json-2021
+	legislators-current.csv-2021
+	legislators-historical.csv-2021
+
+== congress_114_115_116_117.csv ==
+	go to website: https://bioguide.congress.gov/search
+		click "117", "116", "115", "114" on left panel, and then click "Download" on top right
+
