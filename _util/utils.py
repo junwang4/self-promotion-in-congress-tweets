@@ -1,3 +1,10 @@
+###############################################
+#  
+# NOTE: This script is not yet refactored. 
+# It is posted here as a reference in case that interested readers want to explore how various data are generated
+#
+###############################################
+
 import re, datetime, time, glob, os, sys, json
 import pandas as pd
 import numpy as np
@@ -12,19 +19,25 @@ folder_output_figure = '/tmp'
 
 folder_data = '../data'
 folder_pred = f'../code/working/pred'
-folder_big_data = '/Users/jwang72/git/congresstweets' # with data pulled from: https://github.com/alexlitel/congresstweets 
+
+folder_big_data = os.path.expanduser('~/git/congresstweets') # with data pulled from: 
+if not os.path.isdir(folder_big_data):
+    print(f'- please use "{folder_big_data}" to store the tweets pulled from "https://github.com/alexlitel/congresstweets"\n') 
+    print('- here is how I did it\n\n$ cd ~/git\n$ git clone https://github.com/alexlitel/congresstweets\n')
+    sys.exit()
+
 
 fpath_pred = f'{folder_pred}/20210331_apply_epochs3.csv.v3' # generated in twitter_classifier.py > apply_one_full_model_to_new_sentences()
 
-fpath_members = f'{folder_data}/congress_member_202103.csv' # generated in step_1
-fpath_member_followers = f'{folder_data}/bio_id_followers_202103.csv' # generated in step_2
+fpath_members = f'{folder_data}/congress_member_202103.csv' # generated in step_1_create_congress_member_csv_...()
+fpath_member_followers = f'{folder_data}/bio_id_followers_202103.csv' # generated in step_2_fetch_followers_for_each_bio_id_via_tweepy()
 
 fpath_member_congress_classes = f'{folder_data}/open_data/congress_114_115_116_117.csv'
 # downloaded from: https://bioguide.congress.gov/search
+# for details, check: ../data/open_data/NOTES
 
-fpath_tweet_big = f'{folder_data}/tweets_with_has_i_and_from_known_congress_members.csv' # generated in step_4
+fpath_tweet_big = f'{folder_data}/tweets_with_has_i_and_from_known_congress_members.csv' # generated in step_4_filter_tweets_posted_by_...()
 #id,screen_name,bio_id,date,retweet_count,favorite_count,text,has_i
-# check data_preprocess.py > step_4_filter_tweets_posted_by_known_congress_members__and__enrich_with_hasI_bioId_likes_retweets()
 
 fpath_final_data_for_analysis = f'{folder_data}/final_data_for_regression_analysis.csv' # the ultimate output of this whole script
 
@@ -119,6 +132,9 @@ def read_prediction():
         df_pred['is_sp'] = df_pred.winner.apply(lambda x: int(x=='c1')) # c1: YES, c0: NO
         return df_pred[['id', 'is_sp']]
 
+
+
+
 def generate_final_data_for_regression_analysis(first_date='2017-07-01', last_date='2021-03-31', debug=True, output=False):
     print(f'\n- date range: from {first_date} to {last_date}\n')
 
@@ -126,6 +142,8 @@ def generate_final_data_for_regression_analysis(first_date='2017-07-01', last_da
 
     df_bioId_classes = read_congress_classes(class_recent=117)
     df_member = df_member.merge(df_bioId_classes)
+    print(df_member.iloc[0])
+    return
 
     print(df_member.groupby(['gender']).size())
     print(df_member.groupby(['gender', 'chamber', 'party']).size())
@@ -166,6 +184,57 @@ def generate_final_data_for_regression_analysis(first_date='2017-07-01', last_da
     if 0:
         save_csv(df_out, fpath_final_data_for_analysis)
 
+
+def adjust_num_terms_and_age_based_on_tweet_date(): # takes about 90 seconds
+    df_bioId_classes = read_congress_classes(class_recent=117)
+    df_member = read_congress_member()
+    df_member = df_member.merge(df_bioId_classes)
+
+    warnings = 0
+    def get_adjusted_num_terms_and_age_based_on_tweet_date(x):
+        nonlocal warnings
+        birthday, num_terms, classes = x['birthday'], x['num_terms'], x['classes']
+        classes = sorted(map(int, classes.split()))
+        date = x['date']
+        time_fmt = '%Y-%m-%d'
+        age_when_tweeting = int( (datetime.datetime.strptime(date, time_fmt)-datetime.datetime.strptime(birthday, time_fmt)).days/365.25)
+        num_terms_when_tweeting = None
+        for year in (2017, 2019, 2021):
+            date1 = f'{year}-01-03'
+            date2 = f'{year+2}-01-02'
+            if date>=date1 and date<=date2:
+                congress_class = (year-1787)//2
+                if congress_class in classes:
+                    num_terms_when_tweeting = classes.index(congress_class) +1
+                    #print(num_terms_when_tweeting, congress_class)
+                    break
+        if num_terms_when_tweeting is None:
+            if 0: # H001092 not in class 117 but still has tweets at 2021-01-03
+                print('\n--------- error\n')
+                print(congress_class)
+                print(classes)
+                sys.exit()
+            else:
+                num_terms_when_tweeting = num_terms # by default, num_terms is the num_terms for the most recent tweets
+                warnings += 1 # there are only 920 such tweets, does not matter
+        return age_when_tweeting, num_terms_when_tweeting
+
+
+    df = pd.read_csv(fpath_final_data_for_analysis)
+    df = df.merge(df_member[['bio_id', 'classes', 'birthday']])
+    print(df.iloc[0])
+    print()
+
+    df['tmp'] = df.apply(get_adjusted_num_terms_and_age_based_on_tweet_date, axis=1)
+    df['age'] = df.tmp.apply(lambda x:x[0])
+    df['num_terms'] = df.tmp.apply(lambda x:x[1])
+    df = df.drop(['tmp', 'classes', 'birthday'], axis=1)
+    print(df.iloc[0])
+
+    if 1:
+        save_csv(df, fpath_final_data_for_analysis+'.adjust')
+    print('\n- warnings:', warnings)
+    
 
 
 def generate_sample_id_text_csv_file__and__output_all_tweet_ids():
@@ -256,7 +325,7 @@ def save_fig(figname, fig=None):
         print('\n- figure saved to:', outfig, '\n')
 
 
-def plot_trend_of_gender_difference():
+def plot_trend_of_men_women_monthly_tweets():
     sns.set()
     df = pd.read_csv(fpath_final_data_for_analysis)
     df['ym'] = df['date'].apply(lambda x: x[:7])
@@ -379,10 +448,6 @@ def step_3b_hydrate_to_get_comprehensive_information_of_the_tweets():
 
 
 def step_3c_extract_likes_and_retweets_from_the_above_hydrated_tweets():
-    #print('check file under: microsoft_scisip/code/coling2020/newskit/tweets_utils.py')
-    #folder = '/home/byu/tweets/kelly_congress_tweets'
-    #from tqdm import tqdm
-
     fpath_huge = f'{folder_big_data}/congress_tweets_with_full_information-{helpers.hydrate_version_curr_time}.json'
     print(fpath_huge)
 
@@ -610,21 +675,23 @@ def main_preprocess():
     # Outdated_step_3d_export_bio_id__with__followers()
 
 
-    # NOTE: this one needs to read data created from step_3
+    # NOTE: this one needs to read data that was created from step_3
     #step_4_filter_tweets_posted_by_known_congress_members__and__enrich_with_hasI_bioId_likes_retweets()
 
 
 
 def main():
     pass
+    #plot_trend_of_men_women_monthly_tweets()
+
     #generate_sample_id_text_csv_file__and__output_all_tweet_ids()
     #generate_final_data_for_regression_analysis(first_date='2017-07-01', last_date='2021-03-31', debug=True, output=False)
+    adjust_num_terms_and_age_based_on_tweet_date()
 
-    #plot_trend_of_gender_difference()
 
 
 if __name__ == '__main__':
     tic = time.time()
-    main_preprocess()
-    #main()
+    #main_preprocess()
+    main()
     print(f'\n- time used: {time.time()-tic:.1f} seconds\n')

@@ -5,7 +5,7 @@ Jun Wang, Kelly Cui, and Bei Yu (2021).
 Self Promotion in US Congressional Tweets.
 NAACL-HLT'2021.
 June 6-11, 2021, online.
-[Download PDF](https://github.com/junwang4/self-promotion-in-congress-tweets/blob/main/document/NAACL2021_self_promotion_in_congress_tweets.pdf)
+[Download PDF](https://github.com/junwang4/self-promotion-in-congress-tweets/blob/main/document/NAACL2021_self_promotion_in_congress_tweets_updated.pdf)
 
 ```
 @inproceedings{wcy2021selfpromotion,
@@ -127,7 +127,7 @@ self_promotion_as_predicted_by_BERT_model,bio_id,date,chamber,party,gender,age,f
 ## Excerpts from the paper
 <p float="left">
 
-<img alt="Results of linear mixed-effects regression" src="./image/table_coef.jpg" width=300>
-
+<img alt="Results of linear mixed-effects regression" src="./image/table_coef.png" width=300>
+<img alt="Odds ratios" src="./image/fig_odds_ratios.png" width=320>
 <img alt="Gender difference over time" src="./image/fig_trend_gender_difference.jpg" width=320>
 </p>
