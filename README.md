@@ -127,7 +127,7 @@ self_promotion_as_predicted_by_BERT_model,bio_id,date,chamber,party,gender,age,f
 ## Snapshots
 <p float="left">
 
-<img alt="Results of linear mixed-effects regression" src="./image/table_coef.png" width=300>
+<img alt="Results of linear mixed-effects regression" src="./image/table_coef.jpg" width=300>
 <img alt="Odds ratios" src="./image/fig_odds_ratios.png" width=320>
 <img alt="Gender difference over time" src="./image/fig_trend_gender_difference.jpg" width=320>
 </p>
