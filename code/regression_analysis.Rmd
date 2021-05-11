@@ -10,6 +10,8 @@ require(lme4) # linear mixed-effects regression: glmer (allow binary dependent v
 require(ggeffects) # estimated marginal means (that is, expected mean) from regression models
 #https://www.cscu.cornell.edu/news/statnews/93_emmeans.pdf
 
+require(sjPlot) # for plotting Odds Ratios of the model
+
 require(broom.mixed) # has a function "augment()" to add model statistics to the data so that we can plot residuals (one task of diagnosing the assumptions of linear regression model)
 
 require(scales) # needed in ggplot > scale_x_date(date_format(..))
@@ -17,19 +19,16 @@ require(zoo) # for as.yearmon()
 require(tictoc) # timer: tic(); ...; toc()
 ```
 
+
 ## setup whether to use log-transformation for two independent variables: num_terms, monthly_tweets
-- finally, we chose the original or raw scale of "num_terms" and "monthly_tweets" since its AIC is smallest
+- finally, we chose the original or raw scale of "num_terms" and "monthly_tweets" based on AIC (the one with the smallest AIC)
+
 ```{r}
 use_log_form_of_num_terms = F
 #use_log_form_of_num_terms = T
 
 use_log_form_of_monthly_tweets = F
 #use_log_form_of_monthly_tweets = T
-
-remove_those_tweeting_too_rarely_or_too_frequently = F 
-#remove_those_tweeting_too_rarely_or_too_frequently = T # no difference from FALSE
-monthly_tweets_TH_bottom = 5
-monthly_tweets_TH_top = 400
 ```
 
 ## Util functions:
@@ -40,8 +39,7 @@ ifelse(!dir.exists(folder_of_results), dir.create(folder_of_results, recursive=T
 create_filename_for_output = function(namebase, ext='.pdf') {
   terms_str = paste0('__with_terms', ifelse(use_log_form_of_num_terms, 'LOG', 'RAW'))
   tweets_str = paste0('__tweets', ifelse(use_log_form_of_monthly_tweets, 'LOG', 'RAW'))
-  allmembers_str = paste0('__allmembers', ifelse(remove_those_tweeting_too_rarely_or_too_frequently, 'NO', 'YES'))
-  filename = paste(c(namebase, terms_str, tweets_str, allmembers_str, '.', ext), collapse = '')
+  filename = paste(c(namebase, terms_str, tweets_str, '.', ext), collapse = '')
   return (paste0(folder_of_results, filename))
 }
 
@@ -94,14 +92,16 @@ run_regression_model = function(data, print_summary=T, show_tictoc=T, fixed_fact
 - gender: F, M
 - party: D, R
 - chamber: house, senate
-- age: (today - birthday) / 365.25, which depends on when the data is gendered 
-- num_terms: how many terms served in Congress
+- age: (tweet_date - birthday) / 365.25
+- num_terms: how many terms served in Congress at the time of posting tweet
 - followers_log: logarithm of followers (log-transform: normalize highly skewed distribution)
 
 ```{r}
-# the following data is generated in "helpers.py" > merge_member_and_prediction_data()
+# the following data is generated in "_util/util.py"
 
-df = read.csv('../data/final_data_for_regression_analysis.csv')
+data_fpath = '../data/final_data_for_regression_analysis.csv.adjust' # the values of age and num_terms for a tweet are no longer fixed (depending on when the tweet was posted)
+
+df = read.csv(data_fpath)
 print(nrow(df))
 
 # setDT: convert df from data.frame to data.table
@@ -110,25 +110,6 @@ setDT(df)
 
 df[, ym:=substr(date, 1, 7)] # get yyyy-mm from date yyyy-mm-dd
 df[, monthly_tweets:=.N, by = list(bio_id, ym)]
-
-# so far it seems okay to keep all of them
-if (remove_those_tweeting_too_rarely_or_too_frequently) {
-
-  dfu = copy(unique(df, by=c('bio_id', 'ym')))
-  dfu[, avg_monthly_tweets:=mean(monthly_tweets), by='bio_id']
-  dfu_ = unique(dfu, by=c('bio_id'))
-  bids_too_few = dfu_[avg_monthly_tweets<monthly_tweets_TH_bottom]$bio_id
-  bids_too_much = dfu_[avg_monthly_tweets>monthly_tweets_TH_top]$bio_id
-
-  print(paste0('- removed those whose avg monthly tweets < ', monthly_tweets_TH_bottom, ' : ', length(bids_too_few)) ) 
-  print(paste0('- removed those whose avg monthly tweets > ', monthly_tweets_TH_top, ' : ', length(bids_too_much)) ) 
-  
-  df = df[!(bio_id %in% bids_too_few)]
-  df = df[!(bio_id %in% bids_too_much)]
-  print(paste0('- remained: ', nrow(dfu_) - length(bids_too_much) - length(bids_too_few)) )
-  print(nrow(df))
-}
-
 
 df$monthly_tweets_log = log1p(df$monthly_tweets)
 df$num_terms_log = log1p(df$num_terms)
@@ -226,6 +207,10 @@ For continuous predictors (age, num_terms_log, followers_log, monthly_tweets_log
 
 
 ```{r}
+plot_model(model_overall, show.values = TRUE, value.offset = .4)
+```
+
+```{r}
 compute_expected_mean_for_month = function(model, term, ym) {
     res = ggemmeans(model, terms = c(term))
     tmp = data.table(res)[, .(x, predicted)] 
@@ -287,16 +272,19 @@ save_fig(fpath_output, w=5, h=2.9)
 
 dfu_ = copy(unique(df, by=c('bio_id', 'ym')))
 dfu_[, avg_monthly_tweets:=median(monthly_tweets), by='bio_id']
+dfu_[, avg_num_terms:=median(num_terms), by='bio_id']
+dfu_[, avg_age:=median(age), by='bio_id']
+
 dfu = unique(dfu_, by=c('bio_id'))
-dfu$avg_monthly_tweets_log = log1p(dfu$avg_monthly_tweets)
-dfu$avg_monthly_tweets_sqrt = sqrt(dfu$avg_monthly_tweets)
+#dfu$avg_monthly_tweets_log = log1p(dfu$avg_monthly_tweets)
+#dfu$avg_monthly_tweets_sqrt = sqrt(dfu$avg_monthly_tweets)
 
 
 cbPalette <- c("#56B4E9", "#E69F00", "#F55E00",  "#0072B2",  "#CC79A7", "#BBBBBB", '#666666')
 
 #mylist <- list('age'=5, 'followers_log'=.5, 'num_terms'=1,  'num_terms_log'=.5, 'avg_monthly_tweets'=20, 'avg_monthly_tweets_log'=.15, 'avg_monthly_tweets_sqrt'=.5)
 
-mylist <- list('age'=5, 'followers_log'=.5, 'num_terms'=1, 'avg_monthly_tweets'=20)
+mylist <- list('avg_age'=5, 'followers_log'=.5, 'avg_num_terms'=1, 'avg_monthly_tweets'=20)
 #mylist <- list('avg_monthly_tweets'=20)
 
 for (i in seq_along(mylist)) {
@@ -306,9 +294,7 @@ for (i in seq_along(mylist)) {
   plt = ggplot(dfu, aes_string(x=var, fill='gender')) + geom_histogram(binwidth=bw, alpha=.4, position="identity")  + scale_fill_manual(values=cbPalette) + theme(legend.position = c(0.98, 0.98), legend.justification = c("right", "top"))
   print(plt)
   
-  allmembers_str = paste0('__allmembers', ifelse(remove_those_tweeting_too_rarely_or_too_frequently, 'NO', 'YES'))
-
-  fpath_output = paste(c(folder_of_results, 'distri_', var, allmembers_str, '.pdf'), collapse = '')
+  fpath_output = paste(c(folder_of_results, 'distri_', var, '.pdf'), collapse = '')
   save_fig(fpath_output, w=4, h=2.5)
 }
 ```
@@ -321,7 +307,11 @@ for (i in seq_along(mylist)) {
 
 ```{r}
 data = df[ym=='2020-06',]
-factors = "gender + party + chamber + age + num_terms + monthly_tweets + followers_log"
+
+data$daily_tweets = data$monthly_tweets/30
+data$age10 = data$age/10
+
+factors = "gender + party + chamber + age10 + num_terms + daily_tweets + followers_log"
 
 m = run_regression_model(data, fixed_factors = factors)
 ```
