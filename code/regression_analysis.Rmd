@@ -201,13 +201,6 @@ sink()
 ```
 
 
-## compute the expected mean for F/M over the time with ggemeans(), a ggeffects function 
-
-For categorical predictors (chamber, party), ggemmeans() averages over the proportions of the categories of factors.
-
-For continuous predictors (age, num_terms_log, followers_log, daily_tweets_log), they are held constant at their mean value (e.g., age=60).
-
-
 ```{r}
 use_age_by_10 = T
 if (use_age_by_10) {
@@ -227,6 +220,13 @@ plot_model(m2, show.values = TRUE, value.offset = .4)
 fpath_output = paste(c(folder_of_results, 'model_odds_ratios', age_str, '.png'), collapse = '')
 ggsave(fpath_output, plot=last_plot(), width=3.5, height=3.5)
 ```
+
+
+## compute the expected mean for F/M over the time with ggemeans(), a ggeffects function 
+
+For categorical predictors (chamber, party), ggemmeans() averages over the proportions of the categories of factors.
+
+For continuous predictors (age, num_terms_log, followers_log, daily_tweets_log), they are held constant at their mean value (e.g., age=60).
 
 ```{r}
 compute_expected_mean_for_month = function(model, term, ym) {
