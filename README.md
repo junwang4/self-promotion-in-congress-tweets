@@ -2,7 +2,7 @@
 
 Jun Wang, Kelly Cui, and Bei Yu (2021). 
 Self Promotion in US Congressional Tweets.
-NAACL-HLT'2021.
+NAACL-HLT'2021. Pages 4893-4899.
 June 6-11, 2021, online.
 
 ### ABSTRACT ###
@@ -19,7 +19,7 @@ Prior studies have found that women self-promote less than men due to gender ste
   title = {{Self Promotion in US Congressional Tweets}},
   author = {Wang, Jun and Cui, Kelly and Yu, Bei},
   booktitle = {Proceedings of NAACL-HLT'2021},
-  pages = {4893–4899},
+  pages = {4893-4899},
   url = {https://www.aclweb.org/anthology/2021.naacl-main.388},
   month = {June},
   year = {2021}
