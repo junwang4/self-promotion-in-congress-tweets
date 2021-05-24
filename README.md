@@ -9,17 +9,20 @@ June 6-11, 2021, online.
 Prior studies have found that women self-promote less than men due to gender stereotypes.  In this study we built a BERT-based NLP model to predict whether a Congressional tweet shows self-promotion or not and then used this model to examine whether a gender gap in self-promotion exists among Congressional tweets.  After analyzing 2 million Congressional tweets from July 2017 to March 2021, controlling for a number of factors that include political party, chamber, age, number of terms in Congress, number of daily tweets, and number of followers, we found that women in Congress actually perform more self-promotion on Twitter, indicating a reversal of traditional gender norms where women self-promote less than men. 
 
 ### LINKS ###
-[Short paper.PDF](https://github.com/junwang4/self-promotion-in-congress-tweets/blob/main/document/NAACL2021_self_promotion_in_congress_tweets_updated.pdf)
+[Paper](https://www.aclweb.org/anthology/2021.naacl-main.388/)
 | [Presentation slides.PDF](https://github.com/junwang4/self-promotion-in-congress-tweets/blob/main/document/NAACL2021-selfpromotion-slides.pdf)
 | [Poster.PDF](https://github.com/junwang4/self-promotion-in-congress-tweets/blob/main/document/NAACL2021-selfpromotion-poster.pdf)
 | [Video talk.mp4](https://github.com/junwang4/self-promotion-in-congress-tweets/blob/main/document/NAACL2021-selfpromotion-video-talk.mp4)
 
 ```
 @inproceedings{wcy2021selfpromotion,
-  title={Self Promotion in US Congressional Tweets},
-  author={Wang, Jun and Cui, Kelly and Yu, Bei},
-  booktitle={Proceedings of NAACL-HLT'2021},
-  year={2021}
+  title = {{Self Promotion in US Congressional Tweets}},
+  author = {Wang, Jun and Cui, Kelly and Yu, Bei},
+  booktitle = {Proceedings of NAACL-HLT'2021},
+  pages = {4893–4899},
+  url = {https://www.aclweb.org/anthology/2021.naacl-main.388},
+  month = {June},
+  year = {2021}
 }
 ```
 
